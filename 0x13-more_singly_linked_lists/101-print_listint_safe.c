@@ -1,69 +1,52 @@
 #include "lists.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+size_t looped_listint_len(const listint_t *head);
 
 /**
- * free_listp - frees a linked list
- * @head: head of a list.
+ * print_listint_safe - Prints a listint_t linked list.
+ * @head: A pointer to the head of the listint_t list.
  *
- * Return: no return.
- */
-void free_listp(listp_t **head)
-{
-	listp_t *temp;
-	listp_t *curr;
-
-	if (head != NULL)
-	{
-		curr = *head;
-		while ((temp = curr) != NULL)
-		{
-			curr = curr->next;
-			free(temp);
-		}
-		*head = NULL;
-	}
-}
-
-/**
- * print_listint_safe - prints a linked list.
- * @head: head of a list.
- *
- * Return: number of nodes in the list.
+ * Return: The number of nodes in the list.
  */
 size_t print_listint_safe(const listint_t *head)
 {
-	size_t nnodes = 0;
-	listp_t *hptr, *new, *add;
+	size_t count = 0;
+	const listint_t *current = head;
+	const listint_t *loop_node = NULL;
 
-	hptr = NULL;
-	while (head != NULL)
+	if (head == NULL)
+		return (0);
+
+	if (looped_listint_len(head) == 0)
 	{
-		new = malloc(sizeof(listp_t));
-
-		if (new == NULL)
-			exit(98);
-
-		new->p = (void *)head;
-		new->next = hptr;
-		hptr = new;
-
-		add = hptr;
-
-		while (add->next != NULL)
+		while (current != NULL)
 		{
-			add = add->next;
-			if (head == add->p)
-			{
-				printf("-> [%p] %d\n", (void *)head, head->n);
-				free_listp(&hptr);
-				return (nnodes);
-			}
+			printf("[%p] %d\n", (void *)current, current->n);
+			count++;
+			current = current->next;
 		}
-
-		printf("[%p] %d\n", (void *)head, head->n);
-		head = head->next;
-		nnodes++;
+	}
+	else
+	{
+		while (current != NULL)
+		{
+			printf("[%p] %d\n", (void *)current, current->n);
+			count++;
+			if (current == loop_node)
+			{
+				printf("-> [%p] %d\n", (void *)current, current->n);
+				break;
+			}
+			current = current->next;
+			if (current == loop_node)
+				break;
+			if (count == 1 || count % 2 == 0)
+				loop_node = loop_node == NULL ? head : loop_node->next;
+		}
 	}
 
-	free_listp(&hptr);
-	return (nnodes);
+	return (count);
 }
+
