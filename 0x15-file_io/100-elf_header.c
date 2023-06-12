@@ -1,109 +1,73 @@
+#include "main.h"
 #include <stdio.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
-#include <elf.h>
 
-void print_error(const char *message) {
-    fprintf(stderr, "%s\n", message);
-    exit(98);
+/**
+ * error_file - checks if files can be opened.
+ * @file_from: file_from.
+ * @file_to: file_to.
+ * @argv: arguments vector.
+ * Return: no return.
+ */
+void error_file(int file_from, int file_to, char *argv[])
+{
+	if (file_from == -1)
+	{
+		dprintf(STDERR_FILENO, "Error: Can't read from file %s\n", argv[1]);
+		exit(98);
+	}
+	if (file_to == -1)
+	{
+		dprintf(STDERR_FILENO, "Error: Can't write to %s\n", argv[2]);
+		exit(99);
+	}
 }
 
-void print_elf_header(const Elf64_Ehdr *elf_header) {
-    printf("ELF Header:\n");
-    printf("  Magic:   ");
-    for (int i = 0; i < EI_NIDENT; i++) {
-        printf("%02x ", elf_header->e_ident[i]);
-    }
-    printf("\n");
+/**
+ * main - check the code for Holberton School students.
+ * @argc: number of arguments.
+ * @argv: arguments vector.
+ * Return: Always 0.
+ */
+int main(int argc, char *argv[])
+{
+	int file_from, file_to, err_close;
+	ssize_t nchars, nwr;
+	char buf[1024];
 
-    printf("  Class:                             ");
-    switch (elf_header->e_ident[EI_CLASS]) {
-        case ELFCLASS32:
-            printf("ELF32\n");
-            break;
-        case ELFCLASS64:
-            printf("ELF64\n");
-            break;
-        default:
-            printf("<unknown>\n");
-            break;
-    }
+	if (argc != 3)
+	{
+		dprintf(STDERR_FILENO, "%s\n", "Usage: cp file_from file_to");
+		exit(97);
+	}
 
-    printf("  Data:                              ");
-    switch (elf_header->e_ident[EI_DATA]) {
-        case ELFDATA2LSB:
-            printf("2's complement, little endian\n");
-            break;
-        case ELFDATA2MSB:
-            printf("2's complement, big endian\n");
-            break;
-        default:
-            printf("<unknown>\n");
-            break;
-    }
+	file_from = open(argv[1], O_RDONLY);
+	file_to = open(argv[2], O_CREAT | O_WRONLY | O_TRUNC | O_APPEND, 0664);
+	error_file(file_from, file_to, argv);
 
-    printf("  Version:                           %d (current)\n", elf_header->e_ident[EI_VERSION]);
+	nchars = 1024;
+	while (nchars == 1024)
+	{
+		nchars = read(file_from, buf, 1024);
+		if (nchars == -1)
+			error_file(-1, 0, argv);
+		nwr = write(file_to, buf, nchars);
+		if (nwr == -1)
+			error_file(0, -1, argv);
+	}
 
-    printf("  OS/ABI:                            ");
-    switch (elf_header->e_ident[EI_OSABI]) {
-        case ELFOSABI_SYSV:
-            printf("UNIX - System V\n");
-            break;
-        case ELFOSABI_NETBSD:
-            printf("UNIX - NetBSD\n");
-            break;
-        case ELFOSABI_SOLARIS:
-            printf("UNIX - Solaris\n");
-            break;
-        default:
-            printf("<unknown: %d>\n", elf_header->e_ident[EI_OSABI]);
-            break;
-    }
+	err_close = close(file_from);
+	if (err_close == -1)
+	{
+		dprintf(STDERR_FILENO, "Error: Can't close fd %d\n", file_from);
+		exit(100);
+	}
 
-    printf("  ABI Version:                       %d\n", elf_header->e_ident[EI_ABIVERSION]);
-
-    printf("  Type:                              ");
-    switch (elf_header->e_type) {
-        case ET_EXEC:
-            printf("EXEC (Executable file)\n");
-            break;
-        case ET_DYN:
-            printf("DYN (Shared object file)\n");
-            break;
-        default:
-            printf("<unknown>\n");
-            break;
-    }
-
-    printf("  Entry point address:               0x%lx\n", elf_header->e_entry);
-}
-
-int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        print_error("Usage: elf_header elf_filename");
-    }
-
-    int fd = open(argv[1], O_RDONLY);
-    if (fd == -1) {
-        print_error("Error opening file");
-    }
-
-    Elf64_Ehdr elf_header;
-    ssize_t bytes_read = read(fd, &elf_header, sizeof(elf_header));
-    if (bytes_read == -1) {
-        print_error("Error reading file");
-    }
-
-    if (bytes_read != sizeof(elf_header)) {
-        print_error("Invalid ELF file");
-    }
-
-    close(fd);
-
-    print_elf_header(&elf_header);
-
-    return 0;
+	err_close = close(file_to);
+	if (err_close == -1)
+	{
+		dprintf(STDERR_FILENO, "Error: Can't close fd %d\n", file_from);
+		exit(100);
+	}
+	return (0);
 }
 
